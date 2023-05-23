@@ -1,53 +1,58 @@
-def find_longest_drainage_path(grid):
-    rows = len(grid)
-    cols = len(grid[0])
+import sys
 
-    # Initialize a 2D memoization table to store the lengths of drainage paths
+def find_longest_path(rows, cols, grid):
     memo = [[0] * cols for _ in range(rows)]
+    max_len = 0
+    longest_path = []
 
-    max_length = 0  # Stores the maximum drainage path length
-
-    # Iterate through each grid cell from top-left to bottom-right
     for i in range(rows):
         for j in range(cols):
-            # Calculate the length of the longest drainage path starting from grid[i][j]
-            length = calculate_drainage_path_length(grid, memo, rows, cols, i, j)
-            max_length = max(max_length, length)
+            temp_len, temp_path = calculate_drainage_path_length(grid, memo, rows, cols, i, j)
+            if temp_len > max_len:
+                max_len = temp_len
+                longest_path = temp_path
 
-    return max_length
+    return max_len, longest_path
 
 
-def calculate_drainage_path_length(grid, memo, rows, cols, i, j):
-    if memo[i][j] != 0:
-        return memo[i][j]
+def calculate_drainage_path_length(grid, memo, rows, cols, r, c):
+    if memo[r][c] != 0:
+        return memo[r][c], [(r, c)]
 
-    # Initialize the length of the current drainage path to 1
-    length = 1
+    curr_len = 1
+    curr_path = [(r, c)]
 
-    # Check the four adjacent cells (up, down, left, right) for valid flow
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    for dx, dy in directions:
-        ni = i + dx  # Neighbor's row index
-        nj = j + dy  # Neighbor's column index
+    curr_pos = (r, c)
+    moving_directions = {"RIGHT": (1, 0), "LEFT": (-1, 0), "DOWN": (0, -1), "UP": (0, 1)}
+    max_len = 0
+    max_path = []
 
-        # Check if the neighbor is within the grid boundaries and has a lower elevation
-        if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] < grid[i][j]:
-            length = max(length, 1 + calculate_drainage_path_length(grid, memo, rows, cols, ni, nj))
+    for key, val in moving_directions.items():
+        neigh_coord = tuple(map(lambda i, j: i + j, val, curr_pos))
+        if 0 <= neigh_coord[0] < rows and 0 <= neigh_coord[1] < cols and grid[neigh_coord[0]][neigh_coord[1]] < grid[r][c]:
+            temp_len, temp_path = calculate_drainage_path_length(grid, memo, rows, cols, neigh_coord[0], neigh_coord[1])
+            if temp_len + 1 > max_len:
+                max_len = temp_len + 1
+                max_path = temp_path
 
-    # Memoize the calculated length for the current cell
-    memo[i][j] = length
+    curr_len += max_len
+    curr_path += max_path
 
-    return length
+    memo[r][c] = curr_len
 
+    return curr_len, curr_path
 
 # Example usage
-grid = [
-    [66, 78, 41, 3, 77],
-    [4, 90, 41, 8, 68],
-    [12, 11, 29, 24, 53],
-    [0, 51, 58, 9, 28],
-    [97, 99, 96, 58, 92]
-]
+if __name__ == "__main__":
+    filename = sys.argv[-1]
+    file = open(filename, 'r')
+    lines = file.readlines()
+    n = int(lines[0].split(' ')[0])  # rows
+    m = int(lines[0].split(' ')[1])  # cols
+    grid = []
+    for i in range(1, len(lines)):
+        grid.append([int(x) for x in lines[i].split(' ')])
 
-longest_path_length = find_longest_drainage_path(grid)
-print("Longest drainage path length:", longest_path_length)
+    longest_path_length, longest_path_coords = find_longest_path(n, m, grid)
+    print("Longest drainage path length:", longest_path_length)
+    print("Longest drainage path coordinates:", longest_path_coords)
